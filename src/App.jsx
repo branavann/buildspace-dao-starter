@@ -3,12 +3,15 @@ import { useEffect, useMemo, useState } from "react";
 // Import thirdweb
 import { ThirdwebSDK } from "@3rdweb/sdk";
 import { useWeb3 } from "@3rdweb/hooks";
+import { ethers } from "ethers";
+import { provider } from "ethers";
 
 // Initalize the SDK with Rinkeby
 const sdk = new ThirdwebSDK("rinkeby");
 
 // Pass in our bundleDrop address
 const bundleDropModule = sdk.getBundleDropModule("0xC63Ba63Fc22CDbc460b55A767eDD2603e2bEA255");
+const tokenModule = sdk.getTokenModule("0x08c057c40474cdaf82a321535c530721a6e44adb");
 
 // useState can only be used within functions not classes - must be called in the same order
 const App = () => {
@@ -23,6 +26,65 @@ const App = () => {
   // First arguement is the default value, second arguement is the function to update the first arguement
   const [hasClaimedNFT, setHasClaimedNFT] = useState(false);
   const [isClaiming, setIsClaiming] = useState(false)
+
+  // State value that contains the number of tokens each member has
+  const [memberTokenAmounts, setMemberTokenAmounts] = useState({});
+  // Array with members' addresses
+  const [memberAddresses, setMemberAddresses] = useState([]);
+
+  // Shortens users address for visual purposes
+  const shortenAddress = (str) => {
+    return str.substring(0,6) + "..." + str.substring(str.length-4);
+  };
+
+  // Gathering the addresses of members that hold BranavanDOA Access Pass
+  useEffect(() => {
+    // Function exits if the hasClaimedNFT value is false
+    if (!hasClaimedNFT) {
+      return;
+    }
+    // BranavanDAO Access Pass has a tokenID of "0"
+    bundleDropModule
+      .getAllClaimerAddresses("0")
+      .then((addresses) => {
+        console.log("🚀 Member Addresses", addresses)
+        setMemberAddresses(addresses);
+      })
+      .catch((err) => {
+        console.error("Failed to retrieve list of members", err);
+      });
+  },[hasClaimedNFT]);
+
+  // Retrieves the number of tokens held by each member
+  useEffect(() => {
+    if (!hasClaimedNFT) {
+      return;
+    }
+
+    // Grabbing token balances
+    tokenModule
+      .getAllHolderBalances()
+      .then((amounts) => {
+        console.log("👜 Amounts", amounts)
+        setMemberTokenAmounts(amounts);
+      })
+      .catch((err) => {
+        console.error("Failed to retrieve token amounts", err);
+      });
+  }, [hasClaimedNFT]);
+
+  // useMemo caches data - only runs the function if memberAddresses or memberTokenAmounts is changed
+  const memberList = useMemo(() => {
+    return memberAddresses.map((address) => {
+      return {
+        address,
+        tokenAmount: ethers.utils.formatUnits(
+          memberTokenAmounts[address] || 0,
+          18
+        ),
+      };
+    });
+  }, [memberAddresses, memberTokenAmounts]);
  
   useEffect(() => {
     sdk.setProviderOrSigner(signer);
@@ -72,7 +134,30 @@ const App = () => {
     return (
       <div className="member-page">
         <h1> BranavanDAO Member Page</h1>
-        <p>Congradulations on being a member to the most exclusive DAO</p>
+        <p>Congratulations on being a member to the most exclusive DAO</p>
+          <div>
+            <div>
+              <h2>Member List</h2>
+              <table className="card">
+                <thead>
+                  <tr>
+                    <th>Address</th>
+                    <th>Token Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {memberList.map((member) => {
+                    return (
+                      <tr key={member.address}>
+                        <td>{shortenAddress(member.address)}</td>
+                        <td>{member.tokenAmount}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
       </div>
     );
   };
