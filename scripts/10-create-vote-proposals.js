@@ -37,7 +37,7 @@ const tokenModule = sdk.getTokenModule("0x08c057C40474cDaF82a321535C530721A6E44a
         const transferAmount = 420;
         const recepient = "0xb78196b3e667841047d1Bb1365AB8fB3d46aB1A8";
         await voteModule.propose(
-            "Should BranavanDAO transfer " + recepient + " " + transferAmount + " $BRANU from the treasury for his creation of BranavanDAO?",
+            "Should BranavanDAO transfer Branava " + transferAmount + " $BRANU from the treasury for his creation of BranavanDAO?",
             [
                 {
                     nativeTokenValue: 0,
