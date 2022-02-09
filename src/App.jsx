@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import { ThirdwebSDK } from "@3rdweb/sdk";
 import { useWeb3 } from "@3rdweb/hooks";
 import { ethers } from "ethers";
-import { provider } from "ethers";
 import { UnsupportedChainIdError } from "@web3-react/core";
 
 // Initalize the SDK with Rinkeby
@@ -335,26 +334,27 @@ const App = () => {
     );
   };
 
-  const mintNFT = () => {
-    setIsClaiming(true);
-    bundleDropModule
-    .claim("0",1)
-    .then(() => {
-      setHasClaimedNFT(true);
-      console.log("🌊 Successfully Minted! Welcome to BranavanDAO! Check out your access pass on OpenSea: https://testnets.opensea.io/assets/${bundleDropModule.address.toLowerCase()}/0");
-    })
-    .catch((error) => {
-      console.log("❌ Failed to mint access token!", error)
-    })
-    .finally(() => {
-      setIsClaiming(false);
-    });
-  }
-
   return (
     <div className="mint-nft">
       <h1>Mint your exclusive BranavanDAO Membership NFT</h1>
-      <button disabled={isClaiming} onClick={() => mintNFT()}>
+      <button 
+        disabled={isClaiming} 
+        onClick={() => {
+          setIsClaiming(true);
+          bundleDropModule
+            .claim("0",1)
+            .catch((err) => {
+              console.error("❌ Failed to mint access token!", err);
+              setIsClaiming(false);
+
+            })
+            .finally(() => {
+              setIsClaiming(false);
+              setHasClaimedNFT(true);
+              console.log(`🌊 Successfully Minted! Welcome to BranavanDAO! Check out your access pass on OpenSea: https://testnets.opensea.io/assets/${bundleDropModule.address.toLowerCase()}/0`);
+            });
+        }}
+      >
         {isClaiming ? "Minting..." : "Mint"}
       </button>
     </div>
